@@ -11,8 +11,9 @@ class APIClient:
 
     DCOS_CA = 'dcos-ca.crt'
 
-    def __init__(self, dcos_master):
+    def __init__(self, dcos_master, marathon_master):
         self.dcos_master = dcos_master
+        self.marathon_master = marathon_master
         self.dcos_headers = {
             'User-Agent': 'marathon-autoscale',
             'Content-type': 'application/json'
@@ -107,6 +108,108 @@ class APIClient:
                 response = requests.request(
                     method,
                     self.dcos_master + path,
+                    headers=self.dcos_headers,
+                    data=data,
+                    verify=False
+                )
+
+            self.log.debug("%s %s %s", method, path, response.status_code)
+
+            if response.status_code != 200:
+                if response.status_code == 401 and auth:
+                    self.log.info("Token expired. Re-authenticating to DC/OS")
+                    self.authenticate()
+                    return self.dcos_rest(method, path, data=data, auth=False)
+                else:
+                    response.raise_for_status()
+
+            content = response.content.strip()
+            if not content:
+                content = "{}"
+
+            result = json.loads(content)
+            return result
+
+        except requests.exceptions.HTTPError as e:
+            self.log.error("HTTP Error: %s", e)
+            raise
+        except Exception as e:
+            self.log.error("Error: %s", e)
+            raise
+
+
+    def marathon_rest(self, method, path, data=None, auth=True):
+        """Common querying procedure that handles 401 errors
+        Args:
+            method (str): HTTP method (get or put)
+            path (str): URI path after the mesos master address
+        Returns:
+            JSON requests.response.content result of the query
+        """
+        try:
+            if data is None:
+                response = requests.request(
+                    method,
+                    self.marathon_master + path,
+                    headers=self.dcos_headers,
+                    verify=False
+                )
+            else:
+                response = requests.request(
+                    method,
+                    self.marathon_master + path,
+                    headers=self.dcos_headers,
+                    data=data,
+                    verify=False
+                )
+
+            self.log.debug("%s %s %s", method, path, response.status_code)
+
+            if response.status_code != 200:
+                if response.status_code == 401 and auth:
+                    self.log.info("Token expired. Re-authenticating to DC/OS")
+                    self.authenticate()
+                    return self.dcos_rest(method, path, data=data, auth=False)
+                else:
+                    response.raise_for_status()
+
+            content = response.content.strip()
+            if not content:
+                content = "{}"
+
+            result = json.loads(content)
+            return result
+
+        except requests.exceptions.HTTPError as e:
+            self.log.error("HTTP Error: %s", e)
+            raise
+        except Exception as e:
+            self.log.error("Error: %s", e)
+            raise
+
+    def http_call(self, method, protocol, host, port, path, data=None, auth=True):
+        """Common querying procedure that handles 401 errors
+        Args:
+            method (str): HTTP method (get or put)
+            path (str): URI path after the mesos master address
+        Returns:
+            JSON requests.response.content result of the query
+        """
+
+        uri = protocol + "://" + host + ":" + str(port)
+
+        try:
+            if data is None:
+                response = requests.request(
+                    method,
+                    uri + path,
+                    headers=self.dcos_headers,
+                    verify=False
+                )
+            else:
+                response = requests.request(
+                    method,
+                    self.marathon_master + path,
                     headers=self.dcos_headers,
                     data=data,
                     verify=False

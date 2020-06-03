@@ -49,8 +49,9 @@ class Autoscaler:
         self.cool_down = 0
 
         args = self.parse_arguments()
-
+        print("***********" + args.marathon_master)
         self.dcos_master = args.dcos_master
+        self.marathon_master = args.marathon_master
         self.trigger_mode = args.trigger_mode
         self.autoscale_multiplier = float(args.autoscale_multiplier)
         self.min_instances = int(args.min_instances)
@@ -74,7 +75,7 @@ class Autoscaler:
         self.log = logging.getLogger("autoscale")
 
         # Initialize marathon client for auth requests
-        self.api_client = APIClient(self.dcos_master)
+        self.api_client = APIClient(self.dcos_master, self.marathon_master)
 
         # Initialize agent statistics fetcher and keeper
         self.agent_stats = AgentStats(self.api_client)
@@ -166,12 +167,13 @@ class Autoscaler:
         self.log.debug("scale_app: app_instances %s target_instances %s",
                        app_instances, target_instances)
 
+
         if app_instances != target_instances:
             data = {'instances': target_instances}
             json_data = json.dumps(data)
-            response = self.api_client.dcos_rest(
+            response = self.api_client.marathon_rest(
                 "put",
-                '/service/marathon/v2/apps' + self.marathon_app.app_name,
+                '/v2/apps' + self.marathon_app.app_name,
                 data=json_data
             )
             self.log.debug("scale_app response: %s", response)
@@ -186,6 +188,10 @@ class Autoscaler:
                             help=('The DNS hostname or IP of your Marathon'
                                   ' Instance'),
                             **self.env_or_req('AS_DCOS_MASTER'))
+        parser.add_argument('--marathon-master',
+                            help=('The DNS hostname or IP of your Marathon'
+                                  ' Instance'),
+                            **self.env_or_req('AS_MARATHON_MASTER'))
         parser.add_argument('--trigger_mode',
                             help=('Which metric(s) to trigger Autoscale '
                                   '(cpu, mem, sqs)'),
@@ -249,6 +255,7 @@ class Autoscaler:
         return result
 
     def run(self):
+        print("run(self)")
         """Main function
         """
         self.cool_down = 0

@@ -5,7 +5,7 @@ import logging
 
 class MarathonApp:
 
-    MARATHON_APPS_URI = '/service/marathon/v2/apps'
+    MARATHON_APPS_URI = '/v2/apps'
 
     def __init__(self, app_name, api_client):
         self.app_name = app_name
@@ -16,7 +16,7 @@ class MarathonApp:
         """Determines if the application exists in Marathon
         """
         try:
-            response = self.api_client.dcos_rest(
+            response = self.api_client.marathon_rest(
                 "get",
                 self.MARATHON_APPS_URI + self.app_name
             )
@@ -30,9 +30,10 @@ class MarathonApp:
 
     def get_app_instances(self):
         """Returns the number of running tasks for a given Marathon app"""
+        self.log.debug("get_app_instances........")
         app_instances = 0
 
-        response = self.api_client.dcos_rest(
+        response = self.api_client.marathon_rest(
             "get",
             self.MARATHON_APPS_URI + self.app_name
         )
@@ -51,9 +52,11 @@ class MarathonApp:
         Returns:
             Dictionary of task_id mapped to mesos slave_id
         """
+
+        self.log.debug("get_app_details........")
         app_task_dict = {}
 
-        response = self.api_client.dcos_rest(
+        response = self.api_client.marathon_rest(
             "get",
             self.MARATHON_APPS_URI + self.app_name
         )

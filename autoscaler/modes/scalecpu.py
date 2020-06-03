@@ -12,10 +12,12 @@ class ScaleByCPU(AbstractMode):
     def get_value(self):
         """Get the approximate number of visible messages in a SQS queue
         """
+        self.log.debug("get_value")
         app_cpu_values = []
 
         # Get a dictionary of app taskId and hostId for the marathon app
         app_task_dict = self.app.get_app_details()
+        self.log.debug("app_task_dict: %s" % app_task_dict)
 
         # verify if app has any Marathon task data.
         if not app_task_dict:
@@ -28,11 +30,13 @@ class ScaleByCPU(AbstractMode):
 
                 # CPU usage
                 cpu_usage = self.get_cpu_usage(task, agent)
+                self.log.debug("cpu_usage: %s" % cpu_usage)
                 app_cpu_values.append(cpu_usage)
 
         except ValueError:
             raise
 
+        self.log.debug("app_cpu_values: %s" % app_cpu_values)
         # Normalized data for all tasks into a single value by averaging
         value = (sum(app_cpu_values) / len(app_cpu_values))
         self.log.info("Current average CPU time for app %s = %s",
