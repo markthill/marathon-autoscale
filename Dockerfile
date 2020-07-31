@@ -1,15 +1,15 @@
-#
-# Docker image that can be run under Marathon management to dynamically scale a Marathon service running on DC/OS.
-#
+FROM continuumio/miniconda3
 
-FROM python:3-alpine
+ADD environment.yml /environment.yml
+ADD marathon_autoscaler.py marathon_autoscaler.py
+ADD autoscaler /autoscaler/
 
-# Copy the python scripts into the working directory
-ADD / /marathon-autoscale
-WORKDIR /marathon-autoscale
+RUN conda env create -f /environment.yml
+# Pull the environment name out of the environment.yml
+ENV PATH /opt/conda/envs/mesos-autoscaler/bin:$PATH
+RUN echo "source activate mesos-autoscaler" > ~/.bashrc
+#SHELL ["conda", "run", "-n", "mesos-autoscaler", "/bin/bash", "-c"]
 
-RUN apk add --update --virtual .build-dependencies openssl-dev libffi-dev python-dev make gcc g++
-RUN pip install -r requirements.txt
 
-# Start the autoscale application
-CMD python marathon_autoscaler.py
+# ENTRYPOINT ["conda", "run", "-n", "mesos-autoscaler", "python", "marathon_autoscaler.py"]
+ENTRYPOINT ["python", "marathon_autoscaler.py"]

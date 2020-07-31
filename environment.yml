@@ -1,0 +1,11 @@
+name: mesos-autoscaler
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - requests>=2.22.0
+  - PyJWT
+  - cryptography
+  - urllib3
+  - boto3
+  - botocore
